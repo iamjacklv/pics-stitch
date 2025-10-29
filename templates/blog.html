@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>博客</title>
+    <style>
+        .blog-post {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .post-date {
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <h1>博客文章</h1>
+
+
+
+    <a href="admin/blog-editor.html">new</a>
+
+
+
+
+
+    <div id="blog-container">
+        <!-- 博客文章将通过JavaScript动态加载 -->
+    </div>
+
+    <script>
+        // 按时间倒序排列博客文章
+        function loadBlogPosts() {
+            fetch('/api/blog-posts')
+                .then(response => response.json())
+                .then(posts => {
+                    const container = document.getElementById('blog-container');
+                    posts.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    
+                    posts.forEach(post => {
+                        const postElement = document.createElement('div');
+                        postElement.className = 'blog-post';
+                        postElement.innerHTML = `
+                            <h2>${post.title}</h2>
+                            <p class="post-date">${new Date(post.date).toLocaleDateString()}</p>
+                            <div>${post.content}</div>
+                        `;
+                        container.appendChild(postElement);
+                    });
+                });
+        }
+        
+        // 页面加载时获取博客文章
+        window.onload = loadBlogPosts;
+    </script>
+</body>
+</html>

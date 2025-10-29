@@ -1,0 +1,421 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Free online tool to stitch multiple images vertically or horizontally with adjustable spacing. Merge JPG/PNG pictures with one click.">
+    <meta name="keywords" content="image stitch, photo merge, picture combiner, image spacing, free image tool">
+    <meta name="author" content="Picture Stitch Tool">
+    <title>Free Picture Stitch Tool - Merge Images Vertically/Horizontally</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .drop-zone { transition: all 0.3s ease; }
+        .drop-zone.active { border-color: #4f46e5; background-color: rgba(79, 70, 229, 0.05); }
+        .preview-image { transition: transform 0.2s; }
+        .preview-image:hover { transform: scale(1.02); }
+        .progress-bar { transition: width 0.3s ease; }
+        .settings-panel { transition: all 0.3s ease; max-height: 0; overflow: hidden; }
+        .settings-panel.open { max-height: 500px; padding-top: 1rem; }
+    </style>
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-FS4FFQ8BW7"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-FS4FFQ8BW7');
+</script>
+
+
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+            <h1 class="text-3xl font-bold text-gray-900 text-center">
+                <i class="fas fa-images mr-2 text-indigo-600"></i> Advanced Picture Stitch Tool
+            </h1>
+            <p class="mt-2 text-sm text-gray-600 text-center">
+                Merge images vertically or horizontally with adjustable spacing - No registration required
+            </p>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-xl shadow-md overflow-hidden p-6 mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-gray-700">Tool Settings</h2>
+                <button id="toggleSettings" class="text-indigo-600 hover:text-indigo-800 transition">
+                    <i class="fas fa-cog mr-1"></i> Toggle Settings
+                </button>
+            </div>
+
+            <div id="settingsPanel" class="settings-panel">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Stitch Direction</label>
+                        <div class="flex space-x-4">
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="direction" value="vertical" checked class="h-4 w-4 text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-gray-700">Vertical</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="direction" value="horizontal" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-gray-700">Horizontal</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="spacing" class="block text-sm font-medium text-gray-700 mb-1">Spacing (px)</label>
+                        <input type="range" id="spacing" min="0" max="50" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>0</span>
+                            <span id="spacingValue">0</span>
+                            <span>50</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="drop-zone border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer mb-6" id="dropZone">
+                <i class="fas fa-cloud-upload-alt text-4xl text-indigo-500 mb-3"></i>
+                <h2 class="text-xl font-semibold text-gray-700 mb-2">Drag & Drop Images Here</h2>
+                <p class="text-gray-500 mb-4">or</p>
+                <button id="selectBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-6 rounded-md transition duration-300">
+                    <i class="fas fa-folder-open mr-2"></i> Select Images
+                </button>
+                <input type="file" id="fileInput" accept="image/*" multiple class="hidden">
+                <p class="text-xs text-gray-400 mt-3">Supports JPG, PNG, WEBP (Max 20 images)</p>
+            </div>
+
+            <div id="selectedFiles" class="hidden mb-6">
+                <h3 class="text-lg font-medium text-gray-700 mb-3">Selected Images (<span id="fileCount">0</span>)</h3>
+                <div id="thumbnails" class="flex flex-wrap gap-3"></div>
+            </div>
+
+            <div class="flex justify-center gap-4 mb-6">
+                <button id="mergeBtn" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <i class="fas fa-layer-group mr-2"></i> Merge Images
+                </button>
+                <button id="clearBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-6 rounded-md transition duration-300">
+                    <i class="fas fa-trash-alt mr-2"></i> Clear All
+                </button>
+            </div>
+
+            <div id="progressContainer" class="hidden mb-6">
+                <div class="flex justify-between mb-1">
+                    <span class="text-sm font-medium text-gray-700">Processing...</span>
+                    <span id="progressPercent" class="text-sm font-medium text-gray-700">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div id="progressBar" class="progress-bar bg-indigo-600 h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="resultContainer" class="bg-white rounded-xl shadow-md overflow-hidden p-6 hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-700">Merged Result</h2>
+                <button id="downloadBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md text-sm transition duration-300">
+                    <i class="fas fa-download mr-2"></i> Download
+                </button>
+            </div>
+            <div id="resultImage" class="border border-gray-200 rounded-lg overflow-hidden flex justify-center items-center bg-gray-100">
+                <p class="text-gray-500 py-12">Your merged image will appear here</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+            <div class="text-center text-sm text-gray-500">
+                <a href="about.html">About</a> | 
+                <a href="privacy.html">Privacy</a> | 
+                <a href="blog.html">Blog</a> |
+                <a href="contact.html">Contact</a>
+                <p>© 2025 Advanced Picture Stitch Tool. All rights reserved.</p>
+                <p class="mt-1">Free online tool for combining multiple images with customizable spacing.</p>
+            </div>
+        </div>
+    </footer>
+
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM elements
+            const fileInput = document.getElementById('fileInput');
+            const selectBtn = document.getElementById('selectBtn');
+            const mergeBtn = document.getElementById('mergeBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const dropZone = document.getElementById('dropZone');
+            const thumbnails = document.getElementById('thumbnails');
+            const selectedFiles = document.getElementById('selectedFiles');
+            const fileCount = document.getElementById('fileCount');
+            const resultContainer = document.getElementById('resultContainer');
+            const resultImage = document.getElementById('resultImage');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressPercent = document.getElementById('progressPercent');
+            const toggleSettings = document.getElementById('toggleSettings');
+            const settingsPanel = document.getElementById('settingsPanel');
+            const spacingInput = document.getElementById('spacing');
+            const spacingValue = document.getElementById('spacingValue');
+            const directionRadios = document.querySelectorAll('input[name="direction"]');
+
+            // State variables
+            let files = [];
+            let mergedImageUrl = null;
+            let spacing = 0;
+            let direction = 'vertical';
+
+            // Initialize settings panel
+            toggleSettings.addEventListener('click', () => {
+                settingsPanel.classList.toggle('open');
+            });
+
+            // Update spacing value display
+            spacingInput.addEventListener('input', function() {
+                spacing = parseInt(this.value);
+                spacingValue.textContent = spacing;
+            });
+
+            // Update direction
+            directionRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    direction = this.value;
+                });
+            });
+
+            // File selection handlers
+            selectBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', handleFileSelect);
+
+            // Button event listeners
+            mergeBtn.addEventListener('click', mergeImages);
+            clearBtn.addEventListener('click', clearAll);
+            downloadBtn.addEventListener('click', downloadImage);
+
+            // Drag and drop setup
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+
+            dropZone.addEventListener('drop', handleDrop, false);
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            function highlight() {
+                dropZone.classList.add('active');
+            }
+
+            function unhighlight() {
+                dropZone.classList.remove('active');
+            }
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const droppedFiles = dt.files;
+                handleFiles(droppedFiles);
+            }
+
+            function handleFileSelect(e) {
+                const selectedFiles = e.target.files;
+                handleFiles(selectedFiles);
+            }
+
+            function handleFiles(newFiles) {
+                const imageFiles = Array.from(newFiles).filter(file => 
+                    file.type.match('image.*') && 
+                    (file.type.includes('jpeg') || file.type.includes('png') || file.type.includes('webp'))
+                );
+
+                if (imageFiles.length === 0) {
+                    alert('Please select only JPG, PNG, or WEBP images.');
+                    return;
+                }
+
+                if (files.length + imageFiles.length > 20) {
+                    alert('You can select up to 20 images maximum.');
+                    return;
+                }
+
+                files = [...files, ...imageFiles];
+                updateFileList();
+            }
+
+            function updateFileList() {
+                if (files.length === 0) {
+                    selectedFiles.classList.add('hidden');
+                    mergeBtn.disabled = true;
+                    return;
+                }
+
+                selectedFiles.classList.remove('hidden');
+                fileCount.textContent = files.length;
+                mergeBtn.disabled = files.length < 2;
+                thumbnails.innerHTML = '';
+
+                files.forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const thumbnail = document.createElement('div');
+                        thumbnail.className = 'relative group';
+                        thumbnail.innerHTML = `
+                            <img src="${e.target.result}" alt="Selected image ${index + 1}" class="preview-image w-20 h-20 object-cover rounded-md border border-gray-200">
+                            <button class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" data-index="${index}">
+                                <i class="fas fa-times text-xs"></i>
+                            </button>
+                        `;
+                        thumbnails.appendChild(thumbnail);
+                    };
+                    reader.readAsDataURL(file);
+                });
+
+                document.querySelectorAll('#thumbnails button').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const index = parseInt(this.getAttribute('data-index'));
+                        files.splice(index, 1);
+                        updateFileList();
+                    });
+                });
+            }
+
+            function mergeImages() {
+                if (files.length < 2) {
+                    alert('Please select at least 2 images to merge.');
+                    return;
+                }
+
+                progressContainer.classList.remove('hidden');
+                progressBar.style.width = '0%';
+                progressPercent.textContent = '0%';
+
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const spacingPx = parseInt(spacing);
+                const isVertical = direction === 'vertical';
+
+                // First pass to calculate dimensions
+                let totalSize = 0;
+                let maxCrossSize = 0;
+                const imagePromises = [];
+
+                files.forEach(file => {
+                    const promise = new Promise((resolve) => {
+                        const img = new Image();
+                        img.onload = function() {
+                            if (isVertical) {
+                                totalSize += img.height;
+                                maxCrossSize = Math.max(maxCrossSize, img.width);
+                            } else {
+                                totalSize += img.width;
+                                maxCrossSize = Math.max(maxCrossSize, img.height);
+                            }
+                            resolve();
+                        };
+                        img.src = URL.createObjectURL(file);
+                    });
+                    imagePromises.push(promise);
+                });
+
+                // Add spacing between images
+                totalSize += spacingPx * (files.length - 1);
+
+                Promise.all(imagePromises).then(() => {
+                    // Set canvas dimensions
+                    if (isVertical) {
+                        canvas.width = maxCrossSize;
+                        canvas.height = totalSize;
+                    } else {
+                        canvas.width = totalSize;
+                        canvas.height = maxCrossSize;
+                    }
+
+                    // Fill background
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    // Second pass to draw images
+                    let currentPosition = 0;
+                    let imagesProcessed = 0;
+
+                    files.forEach(file => {
+                        const img = new Image();
+                        img.onload = function() {
+                            if (isVertical) {
+                                ctx.drawImage(img, 0, currentPosition, img.width, img.height);
+                                currentPosition += img.height + spacingPx;
+                            } else {
+                                ctx.drawImage(img, currentPosition, 0, img.width, img.height);
+                                currentPosition += img.width + spacingPx;
+                            }
+                            imagesProcessed++;
+
+                            // Update progress
+                            const progress = Math.round((imagesProcessed / files.length) * 100);
+                            progressBar.style.width = `${progress}%`;
+                            progressPercent.textContent = `${progress}%`;
+
+                            if (imagesProcessed === files.length) {
+                                setTimeout(() => {
+                                    progressContainer.classList.add('hidden');
+                                    showResult(canvas);
+                                }, 300);
+                            }
+                        };
+                        img.src = URL.createObjectURL(file);
+                    });
+                });
+            }
+
+            function showResult(canvas) {
+                mergedImageUrl = canvas.toDataURL('image/png');
+                resultImage.innerHTML = `<img src="${mergedImageUrl}" alt="Merged image result" class="max-w-full">`;
+                resultContainer.classList.remove('hidden');
+                resultContainer.scrollIntoView({ behavior: 'smooth' });
+            }
+
+            function downloadImage() {
+                if (!mergedImageUrl) return;
+
+                const a = document.createElement('a');
+                a.href = mergedImageUrl;
+                const directionName = direction === 'vertical' ? 'vertical' : 'horizontal';
+                a.download = `stitched-${directionName}-${new Date().getTime()}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+
+            function clearAll() {
+                files = [];
+                mergedImageUrl = null;
+                updateFileList();
+                resultContainer.classList.add('hidden');
+                fileInput.value = '';
+            }
+        });
+    </script>
+</body>
+
+
+
+
+
+</html>
